@@ -13,7 +13,6 @@
 - [Built-in Commands](#built-in-commands)
 - [Contributing](#contributing)
 - [Authors](#authors)
-- [License](#license)
 
 ## Description
 
@@ -45,7 +44,7 @@ To run the Simple Shell project, you need the following prerequisites:
    git clone https://github.com/Byan70/simple_shell.git
 
 
-# Author
+## Author
 
 Achieng Bryan
 
