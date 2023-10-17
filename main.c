@@ -1,104 +1,73 @@
 #include "main.h"
+
 /**
- * main - integrates the functions to make the shell work
- * Return: 0 on success
+ * free_data - frees data structure
+ *
+ * @datash: data structure
+ * Return: no return
  */
-int main(void)
+void free_data(data_shell *datash)
 {
-	char *buff = NULL, **argv = NULL;
-	int flag = 1;
+	unsigned int i;
 
-	int status = EXIT_SUCCESS;
-
-	built_in_t built_in_arr[] = {
-		{"exit", ourexit},
-		{"env", _printenv},
-		{"setenv", _setenv},
-		{"unsetenv", _unsetenv},
-		{"cd", _cd},
-		{NULL, NULL}
-	};
-
-	if (isatty(STDIN_FILENO) != 1)
+	for (i = 0; datash->_environ[i]; i++)
 	{
-		_non_int(built_in_arr);
+		free(datash->_environ[i]);
 	}
 
-	(void)signal(SIGINT, sign_handler);
-	(void) built_in_arr;
-
-	while (flag)
-	{
-		_puts("$ ");
-
-
-		buff = read_input();
-
-		argv = token_buff(buff, " \t\r\n\a");
-
-		status = shell_execute(argv, built_in_arr);
-
-		free(argv);
-		free(buff);
-	}
-	return (status);
-}
-/**
- * token_buff - splits the buffer into tokens
- * @buff: pointer to the buffer
- * @delimit: delimitator chosen
- * Return: double pointer to the tokens
- **/
-char **token_buff(char *buff, char *delimit)
-{
-	int buffsize = 64, iterator = 0;
-	char **tokens = malloc(sizeof(char *) * buffsize);
-	char *stoken;
-
-	if (tokens == NULL)
-	{
-		perror("Not possible to allocate memory");
-		free(buff);
-		exit(98);
-	}
-	stoken = _strtok(buff, delimit);
-	while (stoken != NULL)
-	{
-		tokens[iterator] = stoken;
-		iterator++;
-		stoken = _strtok(NULL, delimit);
-	}
-	tokens[iterator] = NULL;
-	return (tokens);
+	free(datash->_environ);
+	free(datash->pid);
 }
 
 /**
- * read_input - read input form stdin
- * Return: pointer to buffer read
+ * set_data - Initialize data structure
+ *
+ * @datash: data structure
+ * @av: argument vector
+ * Return: no return
  */
-char *read_input()
+void set_data(data_shell *datash, char **av)
 {
-	char *buff = NULL;
-	size_t size = 1024;
+	unsigned int i;
 
-	if (getline(&buff, &size, stdin) == EOF)
+	datash->av = av;
+	datash->input = NULL;
+	datash->args = NULL;
+	datash->status = 0;
+	datash->counter = 1;
+
+	for (i = 0; environ[i]; i++)
+		;
+
+	datash->_environ = malloc(sizeof(char *) * (i + 1));
+
+	for (i = 0; environ[i]; i++)
 	{
-		_puts("\n");
-		free(buff);
-		exit(127);
+		datash->_environ[i] = _strdup(environ[i]);
 	}
-	buff[_strlen(buff) - 1] = '\0';
-	return (buff);
+
+	datash->_environ[i] = NULL;
+	datash->pid = aux_itoa(getpid());
 }
 
 /**
- * sign_handler - handles the abscensce of a sign
- * @sig: integer
+ * main - Entry point
+ *
+ * @ac: argument count
+ * @av: argument vector
+ *
+ * Return: 0 on success.
  */
-void sign_handler(int sig)
+int main(int ac, char **av)
 {
-	(void) sig;
-	_puts("\n");
-	puts("$ ");
-	fflush(stdout);
+	data_shell datash;
+	(void) ac;
+
+	signal(SIGINT, get_sigint);
+	set_data(&datash, av);
+	shell_loop(&datash);
+	free_data(&datash);
+	if (datash.status < 0)
+		return (255);
+	return (datash.status);
 }
